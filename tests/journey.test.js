@@ -18,5 +18,5 @@ test('complete adventure preserves scoring, saved answers, chapter scenes, palet
  game=boot(game.storage);assert.equal(game.$('next').hidden,false);assert.equal(game.$('answer').disabled,true);game.submit('hang out');assert.equal(game.$('xp').textContent,'5 / 250 XP');game.$('next').onclick();
  for(const question of chapters.flatMap(c=>c[2]).slice(1)){game.submit(question[2]);assert.equal(game.$('next').hidden,false);game.$('next').onclick();}
  assert.equal(game.$('finish').hidden,false);assert.equal(game.$('game').hidden,true);assert.match(game.$('result').textContent,/245/);assert.equal(game.$('completed').textContent,'25/25');assert.deepEqual([...new Set(game.scenes.map(s=>s[0]))],[0,1,2,3,4]);
- game.$('palette').onclick();game=boot(game.storage);assert.ok(game.classes.has('amber'));game.$('reset').onclick();assert.equal(game.$('xp').textContent,'0 / 250 XP');assert.equal(game.$('finish').hidden,true);
+ game.$('palette').onclick();game=boot(game.storage);assert.ok(game.classes.has('board'));game.$('reset').onclick();assert.equal(game.$('xp').textContent,'0 / 250 XP');assert.equal(game.$('finish').hidden,true);
 });
