@@ -1,24 +1,64 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#242d29"><title>Vocabulary Quest · Pocket Edition</title><link rel="stylesheet" href="src/style.css"></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#dfe6f4">
+<title>Vocabulary Quest: The Mystery of the Broken Laptop</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
 <body>
-<div class="desk-label"><span class="spark">✦</span> LITTLE WORDS. BIG ADVENTURES. <span>EST. 2026</span></div>
-<main class="console">
-<header class="brand"><div>VOCABULARY<span> QUEST</span><small>POCKET EDITION / 01</small></div><div class="power"><i></i> POWER</div></header>
-<div class="bezel"><div class="screen-label"><span>DOT MATRIX WITH IMAGINATION</span><span>◆ ◆ ◆</span></div>
-<div class="screen">
-<div class="hud"><span id="location">GREENWOOD TOWN</span><span id="xp"></span></div>
-<div class="scene"><canvas id="world" width="320" height="112" aria-label="Pixel art adventure scene" role="img"></canvas><div class="scene-title"><small>A VOCABULARY ADVENTURE</small><h1>The Mystery of<br>the Broken Laptop</h1></div><span class="scene-tag">STORY MODE</span></div>
-<nav id="levels" aria-label="Chapter progress"></nav>
-<div class="progress-row"><span>QUEST PROGRESS</span><progress id="progress" max="25" aria-label="Completed questions"></progress><span id="completed">00/25</span></div>
-<section id="game"><div class="chapter-heading"><small id="counter"></small><h2 id="chapter"></h2></div>
-<div class="dialogue"><span class="portrait" aria-hidden="true">E</span><div><span class="speaker">EMMA'S JOURNAL</span><p id="story"></p></div></div>
-<div class="question"><div class="mission-label"><span>YOUR NEXT MOVE</span><span>✦ +10 XP / +5 WITH HELP</span></div><h3 id="question"></h3><form id="form"><label for="answer" class="sr-only">Your answer in English</label><input id="answer" autocomplete="off" spellcheck="false" placeholder="Type your answer in English…"><button id="check"><b class="key">A</b> CHECK ANSWER <span>↵</span></button></form><p id="feedback" role="status" aria-live="polite"></p><div class="actions"><button id="hint" class="secondary"><b class="key">B</b> German hint</button><button id="reveal" class="secondary">Show answer</button></div><button id="next" hidden>CONTINUE ADVENTURE →</button></div></section>
-<section id="finish" hidden><div class="trophy" aria-hidden="true">★</div><small>QUEST COMPLETE</small><h2>Mystery solved!</h2><p>Small words. A big act of courage.<br>You helped Emma find her voice.</p><p id="result"></p></section>
-<div class="screen-footer"><span>● AUTO-SAVE ON</span><span>ENGLISH × ADVENTURE</span></div>
-</div></div>
-<footer class="controls"><div class="dpad" aria-hidden="true"><i></i><span>✚</span></div><div class="system-controls"><button id="reset">RESTART</button><button id="palette" aria-label="Switch screen color palette">PALETTE</button><span>SAVED ON THIS DEVICE</span></div><div class="ab" aria-hidden="true"><span>B</span><span>A</span></div></footer>
-<div class="console-bottom"><span>LEARN. EXPLORE. LEVEL UP.</span><div class="speaker-grille" aria-hidden="true">▰ ▰ ▰ ▰ ▰</div></div>
-</main><p class="desk-footer">A pocket-sized mystery. One word at a time.<br><span>25 QUESTIONS · 5 CHAPTERS · YOUR ADVENTURE</span></p>
+<main class="book">
+  <header class="top">
+    <p class="brand">Vocabulary Quest</p>
+    <p class="xp" id="xp"></p>
+    <h1>The Mystery of the Broken Laptop</h1>
+  </header>
+
+  <figure class="scene">
+    <canvas id="world" width="1280" height="560" role="img" aria-label="Story scene"></canvas>
+    <figcaption id="location"></figcaption>
+  </figure>
+
+  <nav aria-label="Chapters"><ol id="levels"></ol></nav>
+  <div class="progress-row">
+    <progress id="progress" max="25" aria-label="Questions answered"></progress>
+    <span id="completed">00/25</span>
+  </div>
+
+  <section id="game">
+    <p id="counter"></p>
+    <h2 id="chapter"></h2>
+    <p id="story"></p>
+
+    <div class="sheet">
+      <form id="form">
+        <label id="sentence" class="sentence" for="answer"><span id="question"></span><input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="in English"><span id="question-after"></span></label>
+      </form>
+      <p id="feedback" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="actions">
+      <button id="check" form="form">Check answer</button>
+      <button id="next" hidden>Continue the story</button>
+      <button id="hint" type="button" class="quiet">German hint</button>
+      <button id="reveal" type="button" class="quiet">Show answer</button>
+    </div>
+    <p class="rules">10 XP if you get it on the first try, 5 XP with help.</p>
+  </section>
+
+  <section id="finish" hidden>
+    <h2>Mystery solved!</h2>
+    <p>Small words, a big act of courage. You helped Emma find her voice.</p>
+    <p id="result"></p>
+  </section>
+
+  <footer class="foot">
+    <button id="reset" type="button" class="quiet">Start again</button>
+    <button id="palette" type="button" class="quiet">Switch to chalkboard</button>
+    <span>Your progress is saved on this device.</span>
+  </footer>
+</main>
 <script src="src/chapters.js"></script><script src="src/scene.js"></script><script src="src/game.js"></script>
-</body></html>
+</body>
+</html>

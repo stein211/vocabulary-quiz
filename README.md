@@ -12,6 +12,7 @@ Open `index.html` in a browser; no dependencies or installation required. Altern
 - `src/chapters.js`: chapter text, questions, German hints, answers.
 - `src/game.js`: scoring, validation, progress and rendering.
 - `src/style.css`: visual design.
+- `src/scene.js`: chapter illustrations.
 - `tests/game.test.js`: tests (`node --test`).
 
 Progress is stored in the browser, not on a server. First-try answers earn 10 XP; assisted answers earn 5 XP. The original 25-question story is adapted from the chat prototype, with no external images or textbook photos included.
@@ -19,10 +20,14 @@ Progress is stored in the browser, not on a server. First-try answers earn 10 XP
 ## Roadmap
 Mistake review, additional stories, vocabulary import, and optional audio pronunciation.
 
-## Pocket Edition (0.2)
-Game Boy-inspired shell and LCD palette, original canvas pixel scenes for all five chapters,
-chapter route, keyboard-friendly answer controls and a completion screen. Use **PALETTE**
-to switch between green and amber; the choice is saved locally. Existing v1 progress stays compatible.
-The decorative D-pad and A/B shell buttons are ornamental; use the labeled controls inside the screen.
-`src/scene.js` owns the pixel artwork. No build step or image assets are needed.
-The optional Google Fonts typeface falls back to the device's monospace font when offline.
+## Exercise Book Edition (0.3)
+The game now looks like a school exercise book: royal-blue ink on ruled paper, a red margin,
+and a yellow highlighter. You write each answer straight into the blank in the sentence, and
+feedback appears underneath like a note from the teacher. Every chapter has its own illustrated
+scene, from Friday afternoon outside school to the park the next day.
+
+- **Switch to chalkboard** changes to a dark theme; the choice is saved locally.
+- `src/scene.js` draws the chapter illustrations on a canvas. No image assets or build step.
+- `fonts/` holds the two typefaces, Bricolage Grotesque and Caveat, so the game works offline.
+  Both are under the SIL Open Font License (see the licence files in that folder).
+- Progress saved by earlier versions stays compatible.
