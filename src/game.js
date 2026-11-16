@@ -297,7 +297,9 @@ if (typeof document !== 'undefined') {
   /* --- Clue reward --- */
   let afterReward = 'home';
   function openReward(ci, isNew = false) {
-    afterReward = isNew && state.step >= TOTAL ? 'finish' : 'home';
+    // Straight after a chapter, the main button goes on to the next chapter.
+    afterReward = !isNew ? 'home' : state.step >= TOTAL ? 'finish' : 'next';
+    $('reward-map').hidden = afterReward !== 'next';
     $('reward-title').textContent = isNew ? 'Clue found!' : 'Clue ' + (ci + 1);
     $('reward-sub').textContent = 'Chapter ' + (ci + 1) + ': ' + chapters[ci][0];
     $('case-tab').textContent = 'CLUE ' + (ci + 1) + ' OF 5';
@@ -307,10 +309,15 @@ if (typeof document !== 'undefined') {
     const log = state.log.slice(ci * 5, ci * 5 + 5);
     $('reward-xp').textContent = '⭐ ' + log.reduce((a, b) => a + (b || 0), 0);
     $('reward-perfect').textContent = '🎯 ' + log.filter(x => x === 10).length + '/5';
-    $('reward-btn').textContent = afterReward === 'finish' ? 'See your result' : 'Back to the map';
+    $('reward-btn').textContent = afterReward === 'finish' ? 'See your result' : afterReward === 'next' ? 'Start chapter ' + (ci + 2) + ': ' + chapters[ci + 1][0] : 'Back to the map';
     show('reward'); drawWorld(ci, true, $('clue-scene'));
   }
-  $('reward-btn').onclick = () => { if (afterReward === 'finish') { renderFinish(); show('finish'); } else { renderHome(); show('home'); } };
+  $('reward-btn').onclick = () => {
+    if (afterReward === 'finish') { renderFinish(); show('finish'); }
+    else if (afterReward === 'next') openLesson();
+    else { renderHome(); show('home'); }
+  };
+  $('reward-map').onclick = () => { renderHome(); show('home'); };
 
   /* --- Finish and challenge --- */
   function renderFinish() {
