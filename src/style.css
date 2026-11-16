@@ -69,9 +69,15 @@ svg.buddy{display:block;width:100%;height:auto;overflow:visible}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .board-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:.2rem .6rem}
 .board-head h2{font-size:1.2rem}
+.group-name-row,.group-code-row{display:flex;align-items:baseline;gap:.6rem;width:100%}
+.group-name{font-size:1.35rem;line-height:1.25;overflow-wrap:anywhere}
+.small-link{font-size:.875rem;padding:0}
+.group-code-row{margin-top:.1rem}
 .board-group{font-weight:600;color:var(--soft);font-size:.9375rem}
-.board-head .link{margin-left:auto;padding:0}
+.group-code-row .link{margin-left:auto;padding:0}
+.board-join .btn{margin-top:.8rem}
 .board-join p{color:var(--soft);margin:.3rem 0 .8rem}
+.board-join .error{color:var(--red-d)}
 .join-label{margin:1.2rem 0 0!important}
 .join-row{display:flex;gap:.5rem;margin-top:.5rem}
 .join-row .text-input{flex:1;text-transform:uppercase;padding:.55rem .8rem}

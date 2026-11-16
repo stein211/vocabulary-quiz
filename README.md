@@ -40,7 +40,7 @@ Challenge links only work when the game is online. With GitHub Pages turned on
 https://stein211.github.io/vocabulary-quiz/ and challenge links point there.
 
 ### Online leaderboard (optional)
-Tap 🏆 on the map to create a group or join one with a code like `PENGUIN-4821`, then use
+Tap 🏆 on the map to create a named group or join one with a code like `WORD-4821`, then use
 *Invite friends* to share a link. The leaderboard shows each player's buddy, nickname,
 questions finished, XP and playing time, and updates while friends play. Playing time only
 counts while a question is on screen and someone is actually playing.

@@ -54,3 +54,12 @@ test('a solved question counts on the board straight away, within the database l
  assert.ok(p.xp<=p.step*10&&p.perfect<=p.step);
  assert.equal(boardProgress({step:25,solved:false,xp:250,perfect:25,seconds:1e9}).seconds,360000);
 });
+const {codeWord,cleanGroupName}=require('../src/game.js');
+test('group codes come from the group name',()=>{
+ assert.equal(codeWord('The Word Detectives','FOX'),'WORD');
+ assert.match(makeGroupCode(codeWord('Die Wörter-Füchse','FOX')),/^WORTERFU-\d{4}$/);
+ assert.equal(codeWord('🔍🔍','FOX'),'FOX');
+ assert.match(makeGroupCode(codeWord('Super Readers','FOX')),/^SUPER-\d{4}$/);
+ assert.equal(cleanGroupName('  Team\u0007 Rocket  '),'Team Rocket');
+ assert.equal(cleanGroupName('x'.repeat(40)).length,30);
+});
