@@ -39,4 +39,19 @@ Challenge links only work when the game is online. With GitHub Pages turned on
 (Settings → Pages → Deploy from branch → `main`, folder `/`), the game lives at
 https://stein211.github.io/vocabulary-quiz/ and challenge links point there.
 
+### Online leaderboard (optional)
+Tap 🏆 on the map to create a group or join one with a code like `PENGUIN-4821`, then use
+*Invite friends* to share a link. The leaderboard shows each player's buddy, nickname,
+questions finished, XP and playing time, and updates while friends play. Playing time only
+counts while a question is on screen and someone is actually playing.
+
+The scores are kept in a free [Supabase](https://supabase.com) project. To switch it on:
+1. Create a Supabase project, open **SQL Editor**, paste `supabase/setup.sql` and click **Run**.
+2. Copy the **Project URL** and the **Publishable key** (Project Settings → API Keys) into `src/config.js`.
+
+Only a random player id, nickname, buddy, group code, progress, XP and time are stored. The
+game can't read or change the table directly, only through three checked functions, and each
+device can only change or remove its own entry (*Leave group* deletes it). With `src/config.js`
+left empty, the game works exactly as before without a leaderboard.
+
 Fonts (Fredoka, Special Elite) are bundled in `fonts/` with their licences, so it works offline.

@@ -33,6 +33,7 @@
       <span title="XP">⭐ <b id="xp-stat"></b></span>
       <span title="Clues found">🔍 <b id="clue-stat"></b></span>
       <span title="Correct first try in a row">🔥 <b id="combo-stat"></b></span>
+      <button id="trophy" class="trophy-btn" type="button" aria-label="Leaderboard" hidden>🏆 <b id="rank-stat"></b></button>
     </header>
     <div id="challenge-bar" class="challenge-bar" hidden></div>
     <div id="path" class="path"></div>
@@ -40,6 +41,38 @@
       <button id="reset" class="link" type="button">Start again</button>
       <span>Your progress is saved on this device.</span>
     </footer>
+  </section>
+
+  <!-- Leaderboard -->
+  <section id="leaders" class="view" hidden>
+    <div class="lhead"><button id="leaders-close" class="icon-btn" type="button" aria-label="Back to the map">✕</button><h2 class="leaders-title">Leaderboard</h2></div>
+    <section id="board" class="board" aria-labelledby="board-title">
+      <div class="board-head">
+        <h2 id="board-title" class="sr-only">Leaderboard</h2>
+        <span id="board-group" class="board-group"></span>
+        <button id="board-invite" class="link" type="button" hidden>Invite friends</button>
+      </div>
+      <div id="board-join" class="board-join" hidden>
+        <p>Play with friends and see everyone's progress here.</p>
+        <button id="board-create" class="btn" type="button">Create a group</button>
+        <p class="join-label">Got a code from a friend?</p>
+        <div class="join-row">
+          <input id="board-code" class="text-input" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="Group code" aria-label="Group code">
+          <button id="board-join-btn" class="btn ghost" type="button">Join</button>
+        </div>
+        <p id="board-error" class="error" hidden></p>
+      </div>
+      <ol id="board-list" class="board-list" hidden></ol>
+      <p id="board-status" class="board-status" hidden></p>
+      <div id="board-share-box" class="share-box" hidden>
+        <p id="board-share-note"></p>
+        <input id="board-share-link" class="text-input" readonly aria-label="Group invite link">
+      </div>
+      <div id="board-foot" class="board-foot" hidden>
+        <button id="board-more" class="link" type="button" hidden></button>
+        <button id="board-leave" class="link quiet-link" type="button">Leave group</button>
+      </div>
+    </section>
   </section>
 
   <!-- One question -->
@@ -98,6 +131,7 @@
     <div class="pills">
       <div class="pill gold"><small>XP</small><b id="final-xp"></b></div>
       <div class="pill green"><small>First try</small><b id="final-perfect"></b></div>
+      <div class="pill blue"><small>Time</small><b id="final-time"></b></div>
     </div>
     <div id="versus" class="versus" hidden></div>
     <button id="share" class="btn" type="button">Challenge a friend</button>
@@ -112,6 +146,7 @@
   </section>
 
 </div>
+<script src="src/config.js"></script>
 <script src="src/chapters.js"></script>
 <script src="src/characters.js"></script>
 <script src="src/scene.js"></script>

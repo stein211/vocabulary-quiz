@@ -51,7 +51,21 @@ function verdict(me, them) {
   return 'draw';
 }
 
-if (typeof module !== 'undefined') module.exports = { normalize, matches, reward, shuffle, makeBank, encodeChallenge, decodeChallenge, verdict, TOTAL, MAX_XP };
+// Leaderboard helpers
+const cleanGroup = s => String(s || '').toUpperCase().replace(/\s+/g, '');
+const validGroup = s => /^[A-Z0-9-]{3,20}$/.test(cleanGroup(s));
+const makeGroupCode = (word, rand = Math.random) => String(word || 'QUEST').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) + '-' + (1000 + Math.floor(rand() * 9000));
+function formatTime(sec) {
+  sec = Math.max(0, Math.round(sec || 0));
+  if (sec < 60) return sec + ' s';
+  const m = Math.floor(sec / 60);
+  return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+}
+const rankPlayers = rows => rows.slice().sort((a, b) => b.step - a.step || b.xp - a.xp || a.seconds - b.seconds);
+// What the board shows as "questions done": a solved question counts before Continue is pressed.
+const boardProgress = st => ({ step: Math.min(TOTAL, st.step + (st.solved ? 1 : 0)), xp: st.xp, perfect: st.perfect, seconds: Math.min(360000, st.seconds || 0) });
+
+if (typeof module !== 'undefined') module.exports = { normalize, matches, reward, shuffle, makeBank, encodeChallenge, decodeChallenge, verdict, cleanGroup, validGroup, makeGroupCode, formatTime, rankPlayers, boardProgress, TOTAL, MAX_XP };
 
 /* ---------- The game in the browser ---------- */
 if (typeof document !== 'undefined') {
@@ -61,7 +75,9 @@ if (typeof document !== 'undefined') {
   const ids = CHARACTERS.map(c => c.id);
   const chapterColors = [['#3cc46e', '#2a9a53'], ['#7b5cff', '#5b3fd6'], ['#ff5a6a', '#d83a4b'], ['#3fa9f5', '#2280c7'], ['#ffb020', '#d98c00']];
   const praise = ['Great job!', 'Brilliant!', 'You got it!', 'Super!', 'Well done!', 'Nice work!'];
-  const fresh = () => ({ v: 2, step: 0, xp: 0, perfect: 0, combo: 0, assisted: false, solved: false, hint: 0, log: [], picked: [], typing: false, name: '', avatar: '', challenge: null });
+  const fresh = () => ({ v: 2, step: 0, xp: 0, perfect: 0, combo: 0, assisted: false, solved: false, hint: 0, log: [], picked: [], typing: false, seconds: 0, name: '', avatar: '', challenge: null, group: '', pid: '', psecret: '' });
+  // Kept when the story starts again.
+  const keepFields = () => ({ name: state.name, avatar: state.avatar, challenge: state.challenge, typing: state.typing, group: state.group, pid: state.pid, psecret: state.psecret });
 
   let state = fresh();
   try {
@@ -75,6 +91,7 @@ if (typeof document !== 'undefined') {
   if (!ids.includes(state.avatar)) state.avatar = '';
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
+  let invitedTo = '';
   // A challenge link opens the game with ?c=...
   try {
     const url = new URL(location.href), code = url.searchParams.get('c');
@@ -83,13 +100,27 @@ if (typeof document !== 'undefined') {
       if (ch) { state.challenge = ch; save(); }
       url.searchParams.delete('c'); history.replaceState(null, '', url.pathname + url.search + url.hash);
     }
+    const g = url.searchParams.get('g'); // a group invite link opens the game with ?g=CODE
+    if (g) {
+      if (validGroup(g)) { state.group = cleanGroup(g); invitedTo = state.group; save(); }
+      url.searchParams.delete('g'); history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
   } catch {}
+  // A random id and secret let this device update only its own row on the leaderboard.
+  if (!state.pid || !state.psecret) {
+    const hex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(b => b.toString(16).padStart(2, '0')).join(''); };
+    const h = hex(16);
+    state.pid = h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-a' + h.slice(17, 20) + '-' + h.slice(20, 32);
+    state.psecret = hex(24); save();
+  }
 
   const buddy = (mood, id = state.avatar) => characterSVG(id || 'fox', mood);
   const charName = id => (CHARACTERS.find(c => c.id === id) || {}).name || '';
   const show = view => {
-    ['welcome', 'home', 'lesson', 'reward', 'finish'].forEach(v => { $(v).hidden = v !== view; });
+    ['welcome', 'home', 'leaders', 'lesson', 'reward', 'finish'].forEach(v => { $(v).hidden = v !== view; });
     document.body.dataset.view = view; window.scrollTo(0, 0);
+    clearInterval(boardPoll);
+    if ((view === 'home' || view === 'leaders') && boardOn && state.group) { loadBoard(); boardPoll = setInterval(loadBoard, 15000); }
   };
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
 
@@ -108,7 +139,12 @@ if (typeof document !== 'undefined') {
     $('start').textContent = editing ? 'Save' : chosen ? 'Start the mystery' : 'Choose a buddy to start';
     $('start').disabled = !chosen;
     const ch = state.challenge;
-    $('invite').hidden = !ch || editing;
+    $('invite').hidden = (!ch && !invitedTo) || editing;
+    if (!ch && invitedTo && !editing) {
+      $('invite').replaceChildren();
+      const txt = el('div'); txt.append(el('b', '', "You're invited! 🎉"), el('span', '', ' Pick a buddy and a nickname to join group ' + invitedTo + ' and race your friends.'));
+      $('invite').append(txt);
+    }
     if (ch && !editing) {
       $('invite').replaceChildren();
       const pic = el('div', 'invite-avatar'); pic.innerHTML = buddy('yay', ch.avatar);
@@ -120,7 +156,7 @@ if (typeof document !== 'undefined') {
     const name = cleanName($('name').value);
     $('name-error').hidden = !!name;
     if (!name || !chosen) { if (!name) $('name').focus(); return; }
-    state.name = name; state.avatar = chosen; save(); editing = false; route();
+    state.name = name; state.avatar = chosen; save(); editing = false; syncBoard(true); route();
   };
   $('name').addEventListener('keydown', e => { if (e.key === 'Enter') $('start').click(); });
 
@@ -128,6 +164,7 @@ if (typeof document !== 'undefined') {
   const offsets = [0, -64, -96, -64, 0];
   function renderHome() {
     $('me').innerHTML = buddy('happy'); $('me').append(el('span', '', state.name));
+    renderBoard();
     $('xp-stat').textContent = state.xp; $('clue-stat').textContent = Math.floor(state.step / 5) + '/5'; $('combo-stat').textContent = state.combo;
     const ch = state.challenge;
     $('challenge-bar').hidden = !ch;
@@ -179,8 +216,7 @@ if (typeof document !== 'undefined') {
   $('me').onclick = () => { editing = true; chosen = state.avatar; $('name').value = state.name; renderWelcome(); show('welcome'); };
   $('reset').onclick = () => {
     if (!confirm('Start the story again? Your XP goes back to 0.')) return;
-    const keep = { name: state.name, avatar: state.avatar, challenge: state.challenge, typing: state.typing };
-    state = Object.assign(fresh(), keep); save(); route();
+    state = Object.assign(fresh(), keepFields()); save(); syncBoard(true); route();
   };
 
   /* --- Lesson --- */
@@ -273,7 +309,7 @@ if (typeof document !== 'undefined') {
       const xp = reward(state);
       state.xp += xp; state.log[state.step] = xp; state.solved = true;
       if (state.assisted) state.combo = 0; else { state.perfect++; state.combo++; }
-      sheetWrong = false; save(); renderLesson();
+      sheetWrong = false; save(); syncBoard(); renderLesson();
     } else {
       state.assisted = true; state.combo = 0; sheetWrong = true; save();
       $('lesson-combo').textContent = 0;
@@ -283,7 +319,7 @@ if (typeof document !== 'undefined') {
   $('check').onclick = check;
   $('hint').onclick = () => { state.hint = Math.min(2, state.hint + 1); state.assisted = true; save(); renderLesson(); };
   $('mode').onclick = () => { state.typing = !state.typing; typed = state.typing ? state.picked.join(' ') : ''; save(); renderLesson(); };
-  $('close').onclick = () => { sheetWrong = false; route(); };
+  $('close').onclick = () => { sheetWrong = false; save(); syncBoard(); route(); };
   $('sheet-btn').onclick = () => {
     if (!state.solved) { // try again
       sheetWrong = false; state.picked = []; typed = ''; save(); $('sheet').hidden = true; renderLesson(); return;
@@ -322,7 +358,7 @@ if (typeof document !== 'undefined') {
   /* --- Finish and challenge --- */
   function renderFinish() {
     $('finish-avatar').innerHTML = buddy('yay');
-    $('final-xp').textContent = '⭐ ' + state.xp; $('final-perfect').textContent = '🎯 ' + state.perfect + '/25';
+    $('final-xp').textContent = '⭐ ' + state.xp; $('final-perfect').textContent = '🎯 ' + state.perfect + '/25'; $('final-time').textContent = '⏱ ' + formatTime(state.seconds);
     const ch = state.challenge, vs = $('versus');
     vs.hidden = !ch; $('share').textContent = ch ? 'Send your score back' : 'Challenge a friend';
     if (ch) {
@@ -333,25 +369,113 @@ if (typeof document !== 'undefined') {
     }
     $('share-box').hidden = true;
   }
-  $('share').onclick = async () => {
-    const code = encodeChallenge({ name: state.name, avatar: state.avatar, xp: state.xp, perfect: state.perfect });
-    const url = new URL(location.href); url.search = ''; url.hash = ''; url.searchParams.set('c', code);
-    const link = url.toString();
-    const text = state.name + ' solved the Vocabulary Quest mystery with ' + state.xp + ' XP. Can you beat it?';
+  const gameLink = (param, value) => { const url = new URL(location.href); url.search = ''; url.hash = ''; url.searchParams.set(param, value); return url.toString(); };
+  async function shareLink(title, text, link, prefix) {
     if (navigator.share) {
-      try { await navigator.share({ title: 'Vocabulary Quest challenge', text, url: link }); return; }
+      try { await navigator.share({ title, text, url: link }); return; }
       catch (e) { if (e && e.name === 'AbortError') return; }
     }
-    $('share-box').hidden = false; $('share-link').value = link;
-    try { await navigator.clipboard.writeText(text + ' ' + link); $('share-note').textContent = 'Link copied! Paste it into a message to your friend.'; }
-    catch { $('share-note').textContent = 'Copy this link and send it to your friend:'; }
-    $('share-link').select();
+    $(prefix + '-box').hidden = false; $(prefix + '-link').value = link;
+    try { await navigator.clipboard.writeText(text + ' ' + link); $(prefix + '-note').textContent = 'Link copied! Paste it into a message to your friends.'; }
+    catch { $(prefix + '-note').textContent = 'Copy this link and send it to your friends:'; }
+    $(prefix + '-link').select();
+  }
+  $('share').onclick = () => {
+    const link = gameLink('c', encodeChallenge({ name: state.name, avatar: state.avatar, xp: state.xp, perfect: state.perfect }));
+    shareLink('Vocabulary Quest challenge', state.name + ' solved the Vocabulary Quest mystery with ' + state.xp + ' XP. Can you beat it?', link, 'share');
   };
+
+  /* --- Online leaderboard (Supabase) --- */
+  const boardOn = typeof LEADERBOARD !== 'undefined' && !!(LEADERBOARD.url && LEADERBOARD.key);
+  let boardRows = null, boardError = false, boardAll = false, boardPoll = null, pushTimer = null;
+  async function rpc(fn, body) {
+    const res = await fetch(LEADERBOARD.url.replace(/\/+$/, '') + '/rest/v1/rpc/' + fn, {
+      method: 'POST', headers: { apikey: LEADERBOARD.key, 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Leaderboard request failed: ' + res.status);
+    const text = await res.text(); return text ? JSON.parse(text) : null;
+  }
+  function syncBoard(now = false) {
+    if (!boardOn || !state.group || !state.name || !state.avatar) return;
+    clearTimeout(pushTimer); pushTimer = setTimeout(pushProgress, now ? 0 : 600);
+  }
+  async function pushProgress() {
+    const p = boardProgress(state);
+    try {
+      await rpc('vq_save_progress', { p_id: state.pid, p_secret: state.psecret, p_group: state.group, p_nickname: state.name, p_avatar: state.avatar, p_step: p.step, p_xp: p.xp, p_perfect: p.perfect, p_seconds: p.seconds });
+      if (['home', 'leaders'].includes(document.body.dataset.view)) loadBoard();
+    } catch { boardError = true; }
+  }
+  async function loadBoard() {
+    if (!boardOn || !state.group) return;
+    try { boardRows = await rpc('vq_leaderboard', { p_group: state.group }) || []; boardError = false; }
+    catch { boardError = true; }
+    renderBoard();
+  }
+  function boardRow(r, rank) {
+    const li = el('li', 'board-row' + (r.id === state.pid ? ' you' : ''));
+    li.append(el('span', 'rank', rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : String(rank)));
+    const pic = el('span', 'board-avatar'); pic.innerHTML = buddy('happy', ids.includes(r.avatar) ? r.avatar : 'fox'); li.append(pic);
+    const main = el('div', 'board-main');
+    const top = el('div', 'board-name'); top.append(el('b', '', r.nickname)); if (r.id === state.pid) top.append(el('small', '', 'you'));
+    const bar = el('div', 'mini-bar'); const fill = el('i'); fill.style.width = (r.step / TOTAL * 100) + '%'; bar.append(fill);
+    const done = r.step >= TOTAL;
+    main.append(top, bar, el('span', 'board-meta', (done ? '✓ Finished' : r.step + '/25 · chapter ' + Math.min(5, Math.floor(r.step / 5) + 1)) + ' · ' + r.xp + ' XP · ⏱ ' + formatTime(r.seconds)));
+    li.append(main); return li;
+  }
+  function renderBoard() {
+    $('trophy').hidden = !boardOn; if (!boardOn) return;
+    const g = state.group;
+    $('board-join').hidden = !!g; $('board-invite').hidden = !g; $('board-foot').hidden = !g;
+    $('board-group').textContent = g ? 'Group ' + g : '';
+    const status = !g ? '' : boardError ? 'The leaderboard is offline right now. Your game is still saved on this device.' : boardRows === null ? 'Loading the leaderboard…' : !boardRows.length ? 'No scores yet. Answer a question to appear here!' : '';
+    $('board-status').hidden = !status; $('board-status').textContent = status;
+    const rows = g && boardRows ? rankPlayers(boardRows) : [];
+    const myRank = rows.findIndex(r => r.id === state.pid) + 1;
+    $('rank-stat').textContent = myRank ? (myRank === 1 ? '1st' : myRank === 2 ? '2nd' : myRank === 3 ? '3rd' : myRank + 'th') : '';
+    $('board-list').hidden = !rows.length;
+    const LIMIT = 5, list = $('board-list'); list.replaceChildren();
+    rows.forEach((r, i) => { if (boardAll || i < LIMIT) list.append(boardRow(r, i + 1)); });
+    const me = rows.findIndex(r => r.id === state.pid);
+    if (!boardAll && me >= LIMIT) { list.append(el('li', 'board-gap', '⋯')); list.append(boardRow(rows[me], me + 1)); }
+    $('board-more').hidden = rows.length <= LIMIT;
+    $('board-more').textContent = boardAll ? 'Show fewer' : 'Show all ' + rows.length + ' players';
+  }
+  function joinGroup(code) {
+    state.group = code; boardRows = null; boardError = false; boardAll = false; save();
+    renderBoard(); syncBoard(true); show('leaders');
+  }
+  $('board-create').onclick = () => joinGroup(makeGroupCode(charName(state.avatar)));
+  $('board-join-btn').onclick = () => {
+    const code = cleanGroup($('board-code').value);
+    $('board-error').hidden = validGroup(code);
+    $('board-error').textContent = 'Group codes look like FOX-4821. Ask your friend for theirs.';
+    if (validGroup(code)) { $('board-code').value = ''; joinGroup(code); }
+  };
+  $('board-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('board-join-btn').click(); });
+  $('board-invite').onclick = () => shareLink('Join my Vocabulary Quest group', 'Join my Vocabulary Quest group and race me! Our group code is ' + state.group + '.', gameLink('g', state.group), 'board-share');
+  $('trophy').onclick = () => { renderBoard(); show('leaders'); };
+  $('leaders-close').onclick = () => { renderHome(); show('home'); };
+  $('board-more').onclick = () => { boardAll = !boardAll; renderBoard(); };
+  $('board-leave').onclick = async () => {
+    if (!confirm('Leave group ' + state.group + '? Your score is removed from its leaderboard.')) return;
+    try { await rpc('vq_remove_player', { p_id: state.pid, p_secret: state.psecret }); } catch {}
+    state.group = ''; boardRows = null; $('board-share-box').hidden = true; save(); renderBoard(); show('leaders');
+  };
+
+  // Playing time: counts only while a question is on screen and someone is actually playing.
+  let lastActive = Date.now();
+  ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true }));
+  setInterval(() => {
+    if (document.body.dataset.view !== 'lesson' || document.hidden || Date.now() - lastActive > 90000 || state.step >= TOTAL) return;
+    state.seconds = (state.seconds || 0) + 1;
+    if (state.seconds % 10 === 0) save();
+    if (state.seconds % 30 === 0) syncBoard();
+  }, 1000);
   $('to-map').onclick = () => { renderHome(); show('home'); };
   $('again').onclick = () => {
     if (!confirm('Play the whole story again? Your XP goes back to 0.')) return;
-    const keep = { name: state.name, avatar: state.avatar, challenge: state.challenge, typing: state.typing };
-    state = Object.assign(fresh(), keep); save(); route();
+    state = Object.assign(fresh(), keepFields()); save(); syncBoard(true); route();
   };
 
   function route() {
