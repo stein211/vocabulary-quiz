@@ -34,3 +34,23 @@ test('who wins: XP first, then first-try answers',()=>{
  assert.equal(verdict({xp:230,perfect:20},{xp:230,perfect:22}),'lose');
  assert.equal(verdict({xp:230,perfect:22},{xp:230,perfect:22}),'draw');
 });
+const {cleanGroup,validGroup,makeGroupCode,formatTime,rankPlayers,boardProgress}=require('../src/game.js');
+test('group codes',()=>{
+ assert.equal(cleanGroup(' fox-4821 '),'FOX-4821');
+ assert.ok(validGroup('fox-4821'));assert.ok(!validGroup('ab'));assert.ok(!validGroup('no spaces!'));
+ assert.match(makeGroupCode('Penguin',()=>0.5),/^PENGUIN-\d{4}$/);
+ assert.ok(validGroup(makeGroupCode('Bunny')));
+});
+test('playing time reads naturally',()=>{
+ assert.equal(formatTime(42),'42 s');assert.equal(formatTime(125),'2 min');assert.equal(formatTime(3900),'1 h 5 min');
+});
+test('leaderboard order: most questions, then XP, then fastest',()=>{
+ const r=rankPlayers([{n:'a',step:12,xp:110,seconds:500},{n:'b',step:25,xp:200,seconds:900},{n:'c',step:12,xp:110,seconds:400},{n:'d',step:12,xp:120,seconds:999}]);
+ assert.deepEqual(r.map(x=>x.n),['b','d','c','a']);
+});
+test('a solved question counts on the board straight away, within the database limits',()=>{
+ const p=boardProgress({step:0,solved:true,xp:10,perfect:1,seconds:30});
+ assert.deepEqual(p,{step:1,xp:10,perfect:1,seconds:30});
+ assert.ok(p.xp<=p.step*10&&p.perfect<=p.step);
+ assert.equal(boardProgress({step:25,solved:false,xp:250,perfect:25,seconds:1e9}).seconds,360000);
+});

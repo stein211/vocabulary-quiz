@@ -1,0 +1,71 @@
+-- Vocabulary Quest leaderboard: run this once in Supabase (SQL Editor → New query → Run).
+-- Safe to run again; it only creates or updates what it needs.
+--
+-- What is stored: a random player id, nickname, buddy, group code, progress, XP and playing time.
+-- The game can't read or change the table directly. It can only call the three functions
+-- below, which check every value, and each player can only change or delete their own row.
+
+create table if not exists public.vq_players (
+  id          uuid primary key,
+  secret_hash bytea not null,
+  group_code  text not null check (group_code ~ '^[A-Z0-9-]{3,20}$'),
+  nickname    text not null check (char_length(nickname) between 1 and 16),
+  avatar      text not null check (avatar in ('penguin','cat','dog','owl','lion','tiger','horse','bunny','fox')),
+  step        int  not null default 0 check (step between 0 and 25),
+  xp          int  not null default 0 check (xp between 0 and 250 and xp <= step * 10),
+  perfect     int  not null default 0 check (perfect between 0 and step),
+  seconds     int  not null default 0 check (seconds between 0 and 360000),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists vq_players_group on public.vq_players (group_code);
+
+-- Lock the table: no direct access from the game.
+alter table public.vq_players enable row level security;
+revoke all on public.vq_players from anon, authenticated;
+
+-- Save (or create) your own progress. The secret only lives on your device;
+-- a row can only be changed by whoever knows its secret.
+create or replace function public.vq_save_progress(
+  p_id uuid, p_secret text, p_group text, p_nickname text, p_avatar text,
+  p_step int, p_xp int, p_perfect int, p_seconds int)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_secret is null or char_length(p_secret) < 20 then
+    raise exception 'invalid secret';
+  end if;
+  insert into vq_players as p (id, secret_hash, group_code, nickname, avatar, step, xp, perfect, seconds)
+  values (p_id, sha256(convert_to(p_secret, 'UTF8')), upper(btrim(p_group)), btrim(p_nickname),
+          p_avatar, p_step, p_xp, p_perfect, p_seconds)
+  on conflict (id) do update
+    set group_code = excluded.group_code, nickname = excluded.nickname, avatar = excluded.avatar,
+        step = excluded.step, xp = excluded.xp, perfect = excluded.perfect,
+        seconds = excluded.seconds, updated_at = now()
+    where p.secret_hash = excluded.secret_hash;
+end $$;
+
+-- The ranking for one group: most questions done, then most XP, then fastest.
+create or replace function public.vq_leaderboard(p_group text)
+returns table (id uuid, nickname text, avatar text, step int, xp int, perfect int, seconds int, updated_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select id, nickname, avatar, step, xp, perfect, seconds, updated_at
+  from vq_players
+  where group_code = upper(btrim(p_group))
+  order by step desc, xp desc, seconds asc, updated_at asc
+  limit 50;
+$$;
+
+-- Remove yourself from the board.
+create or replace function public.vq_remove_player(p_id uuid, p_secret text)
+returns void
+language sql security definer set search_path = public as $$
+  delete from vq_players where id = p_id and secret_hash = sha256(convert_to(p_secret, 'UTF8'));
+$$;
+
+revoke all on function public.vq_save_progress(uuid, text, text, text, text, int, int, int, int) from public;
+revoke all on function public.vq_leaderboard(text) from public;
+revoke all on function public.vq_remove_player(uuid, text) from public;
+grant execute on function public.vq_save_progress(uuid, text, text, text, text, int, int, int, int) to anon, authenticated;
+grant execute on function public.vq_leaderboard(text) to anon, authenticated;
+grant execute on function public.vq_remove_player(uuid, text) to anon, authenticated;

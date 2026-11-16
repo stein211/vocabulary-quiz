@@ -55,13 +55,44 @@ svg.buddy{display:block;width:100%;height:auto;overflow:visible}
 
 /* Home */
 #home{padding:0 0 2rem}
-.stats{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:.5rem;background:#fff;padding:.7rem 1rem;border-bottom:2px solid var(--line);font-weight:700}
+.stats{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:.35rem;background:#fff;padding:.7rem 1rem;border-bottom:2px solid var(--line);font-weight:700}
 .stats b{font-variant-numeric:tabular-nums}
-.me{display:flex;align-items:center;gap:.35rem;background:#f4f2fb;border:0;border-radius:99px;padding:.15rem .8rem .15rem .2rem;font-weight:700;max-width:45%}
+.me{display:flex;align-items:center;gap:.35rem;background:#f4f2fb;border:0;border-radius:99px;padding:.15rem .7rem .15rem .2rem;font-weight:700;max-width:34%;min-width:0}
 .me svg{width:2.4rem;height:2.4rem}
 .me span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .challenge-bar{display:flex;align-items:center;gap:.6rem;margin:.9rem 1rem 0;background:#fff6d9;border:2.5px solid var(--gold);border-radius:16px;padding:.35rem .9rem .35rem .4rem;font-weight:600}
 .bar-avatar{width:3rem;flex-shrink:0}
+.board{margin:.6rem 1.1rem 0}
+#leaders{padding:0 0 2rem}
+.leaders-title{font-size:1.4rem}
+.trophy-btn{border:0;background:#fff6d9;border-radius:99px;padding:.2rem .6rem;font-weight:700;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.board-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:.2rem .6rem}
+.board-head h2{font-size:1.2rem}
+.board-group{font-weight:600;color:var(--soft);font-size:.9375rem}
+.board-head .link{margin-left:auto;padding:0}
+.board-join p{color:var(--soft);margin:.3rem 0 .8rem}
+.join-label{margin:1.2rem 0 0!important}
+.join-row{display:flex;gap:.5rem;margin-top:.5rem}
+.join-row .text-input{flex:1;text-transform:uppercase;padding:.55rem .8rem}
+.join-row .btn{width:auto;padding:.55rem 1.1rem}
+.board-list{list-style:none;margin:.7rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.board-row{display:flex;align-items:center;gap:.55rem;padding:.35rem .5rem;border-radius:14px}
+.board-row.you{background:#f1edff}
+.rank{width:1.6rem;text-align:center;font-weight:700;color:var(--soft);flex-shrink:0}
+.board-avatar{width:2.6rem;flex-shrink:0}
+.board-main{flex:1;min-width:0}
+.board-name{display:flex;align-items:baseline;gap:.4rem}
+.board-name b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-name small{background:var(--purple);color:#fff;border-radius:99px;padding:0 .45rem;font-size:.75rem;font-weight:700}
+.mini-bar{height:.45rem;border-radius:99px;background:var(--line);overflow:hidden;margin:.2rem 0}
+.mini-bar i{display:block;height:100%;background:var(--green);border-radius:99px}
+.board-meta{font-size:.8125rem;color:var(--soft);font-variant-numeric:tabular-nums}
+.board-gap{text-align:center;color:var(--soft);line-height:1}
+.board-status{color:var(--soft);margin-top:.6rem;font-size:.9375rem}
+.board-foot{display:flex;justify-content:space-between;margin-top:.5rem}
+.quiet-link{color:var(--soft);font-weight:500;font-size:.875rem;margin-left:auto}
+.board .share-box{margin-top:.6rem}
 .path{padding:0 1rem}
 .chapter{margin-top:1.4rem}
 .chapter-banner{position:relative;border-radius:18px;overflow:hidden;background:var(--cc);box-shadow:0 5px 0 var(--cd)}
@@ -146,12 +177,13 @@ svg.buddy{display:block;width:100%;height:auto;overflow:visible}
 .polaroid span{position:absolute;left:0;right:0;bottom:.3rem;text-align:center;font:600 .875rem var(--font);color:var(--ink)}
 .clue-note{margin-top:.9rem;font-size:.9375rem;line-height:1.5}
 .clue-words{margin-top:.7rem;font-size:.8125rem;line-height:1.55;color:#6b4f1d}
-.pills{display:flex;gap:.75rem;justify-content:center;margin:2rem 0 1.6rem}
-.pill{width:7rem;border-radius:16px;overflow:hidden;border:2.5px solid;font-weight:700}
+.pills{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin:2rem 0 1.6rem}
+.pill{width:6.4rem;border-radius:16px;overflow:hidden;border:2.5px solid;font-weight:700}
 .pill small{display:block;font-size:.8125rem;padding:.15rem;color:var(--night)}
 .pill b{display:block;background:var(--night);padding:.45rem 0;font-size:1.25rem}
 .pill.gold{border-color:var(--gold);background:var(--gold)}.pill.gold b{color:var(--gold)}
 .pill.green{border-color:var(--green);background:var(--green)}.pill.green b{color:#7ee6a4}
+.pill.blue{border-color:#3fa9f5;background:#3fa9f5}.pill.blue b{color:#9ad3ff;font-size:1.05rem}
 .dark .btn{margin-top:auto}
 #reward-map{margin-top:.8rem}
 .finish-avatar,.vs-avatar{border-radius:50%;background:radial-gradient(circle at 50% 55%,#fff 0 60%,transparent 61%)}
