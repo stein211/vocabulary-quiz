@@ -1,7 +1,6 @@
 /* Original story illustrations, drawn in code: no image downloads or asset licenses.
    Each chapter has its own time of day, from Friday afternoon to the day after. */
-function drawWorld(chapter, solved = false) {
-  const canvas = document.getElementById('world');
+function drawWorld(chapter, solved = false, canvas = document.getElementById('world')) {
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d'), W = 640, H = 280;
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
