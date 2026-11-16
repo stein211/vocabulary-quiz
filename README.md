@@ -18,3 +18,11 @@ Progress is stored in the browser, not on a server. First-try answers earn 10 XP
 
 ## Roadmap
 Mistake review, additional stories, vocabulary import, and optional audio pronunciation.
+
+## Pocket Edition (0.2)
+Game Boy-inspired shell and LCD palette, original canvas pixel scenes for all five chapters,
+chapter route, keyboard-friendly answer controls and a completion screen. Use **PALETTE**
+to switch between green and amber; the choice is saved locally. Existing v1 progress stays compatible.
+The decorative D-pad and A/B shell buttons are ornamental; use the labeled controls inside the screen.
+`src/scene.js` owns the pixel artwork. No build step or image assets are needed.
+The optional Google Fonts typeface falls back to the device's monospace font when offline.
