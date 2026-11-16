@@ -9,4 +9,12 @@ const chapters = [
 ['The boy tried to ___ the video.','löschen','delete'],['Emma told him to be ___.','ehrlich','honest'],['She did not want to ___ the problem.','ignorieren','ignore'],['The boy finally decided to ___.','sich entschuldigen','apologise'],['Emma wanted to ___ .','Lucy aufheitern','cheer Lucy up']]],
 ['A true friend','The mystery was solved. Emma and Lucy sat together in the park and talked about what they had learned.',[
 ['They sat down on a ___.','Sitzbank','bench'],['Lucy was sure everything would be fine. She was ___.','optimistisch','optimistic'],['You don’t always have to ___.','der Masse folgen','follow the crowd'],['Translate: Gib niemals auf!','Full sentence','Never give up!'],['Translate: Wie hat es am Ende geklappt?','Full sentence','How did things work out in the end?']]]];
+// Shown on the clue card when a chapter is finished.
+const clues = [
+ 'Lucy really wants to win. The new boy, Ben, is friendly and funny.',
+ 'Ben invited the in-crowd. Not everyone wanted to be at that party.',
+ 'The laptop was on the table, then on the floor. Someone was standing right next to it…',
+ 'The video shows who pushed it. Now he has to be honest.',
+ 'Case closed! Real friends tell the truth and stick together.'];
+const shortTitles = ['Friends','The party','The crash','The truth','Courage'];
 if(typeof module !== 'undefined') module.exports=chapters;
