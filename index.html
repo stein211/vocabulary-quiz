@@ -49,11 +49,13 @@
     <section id="board" class="board" aria-labelledby="board-title">
       <div class="board-head">
         <h2 id="board-title" class="sr-only">Leaderboard</h2>
-        <span id="board-group" class="board-group"></span>
-        <button id="board-invite" class="link" type="button" hidden>Invite friends</button>
+        <div class="group-name-row"><b id="board-gname" class="group-name"></b><button id="board-rename" class="link small-link" type="button" hidden>Rename</button></div>
+        <div class="group-code-row"><span id="board-group" class="board-group"></span><button id="board-invite" class="link" type="button" hidden>Invite friends</button></div>
       </div>
       <div id="board-join" class="board-join" hidden>
         <p>Play with friends and see everyone's progress here.</p>
+        <label class="field-label" for="board-name">Name your group</label>
+        <input id="board-name" class="text-input" maxlength="30" autocomplete="off" placeholder="For example: The Word Detectives">
         <button id="board-create" class="btn" type="button">Create a group</button>
         <p class="join-label">Got a code from a friend?</p>
         <div class="join-row">

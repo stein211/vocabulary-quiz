@@ -54,7 +54,10 @@ function verdict(me, them) {
 // Leaderboard helpers
 const cleanGroup = s => String(s || '').toUpperCase().replace(/\s+/g, '');
 const validGroup = s => /^[A-Z0-9-]{3,20}$/.test(cleanGroup(s));
-const makeGroupCode = (word, rand = Math.random) => String(word || 'QUEST').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) + '-' + (1000 + Math.floor(rand() * 9000));
+const makeGroupCode = (word, rand = Math.random) => (String(word || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) || 'QUEST') + '-' + (1000 + Math.floor(rand() * 9000));
+// A group code from the group's name: its first real word, e.g. "The Word Detectives" → WORD-4821.
+const codeWord = (name, fallback) => (String(name || '').toUpperCase().normalize('NFD').replace(/[^A-Z ]/g, '').split(' ').filter(w => w.length >= 3 && !['THE', 'AND', 'DIE', 'DER', 'DAS'].includes(w))[0]) || fallback;
+const cleanGroupName = s => String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 30);
 function formatTime(sec) {
   sec = Math.max(0, Math.round(sec || 0));
   if (sec < 60) return sec + ' s';
@@ -65,7 +68,7 @@ const rankPlayers = rows => rows.slice().sort((a, b) => b.step - a.step || b.xp 
 // What the board shows as "questions done": a solved question counts before Continue is pressed.
 const boardProgress = st => ({ step: Math.min(TOTAL, st.step + (st.solved ? 1 : 0)), xp: st.xp, perfect: st.perfect, seconds: Math.min(360000, st.seconds || 0) });
 
-if (typeof module !== 'undefined') module.exports = { normalize, matches, reward, shuffle, makeBank, encodeChallenge, decodeChallenge, verdict, cleanGroup, validGroup, makeGroupCode, formatTime, rankPlayers, boardProgress, TOTAL, MAX_XP };
+if (typeof module !== 'undefined') module.exports = { normalize, matches, reward, shuffle, makeBank, encodeChallenge, decodeChallenge, verdict, cleanGroup, validGroup, makeGroupCode, codeWord, cleanGroupName, formatTime, rankPlayers, boardProgress, TOTAL, MAX_XP };
 
 /* ---------- The game in the browser ---------- */
 if (typeof document !== 'undefined') {
@@ -75,9 +78,9 @@ if (typeof document !== 'undefined') {
   const ids = CHARACTERS.map(c => c.id);
   const chapterColors = [['#3cc46e', '#2a9a53'], ['#7b5cff', '#5b3fd6'], ['#ff5a6a', '#d83a4b'], ['#3fa9f5', '#2280c7'], ['#ffb020', '#d98c00']];
   const praise = ['Great job!', 'Brilliant!', 'You got it!', 'Super!', 'Well done!', 'Nice work!'];
-  const fresh = () => ({ v: 2, step: 0, xp: 0, perfect: 0, combo: 0, assisted: false, solved: false, hint: 0, log: [], picked: [], typing: false, seconds: 0, name: '', avatar: '', challenge: null, group: '', pid: '', psecret: '' });
+  const fresh = () => ({ v: 2, step: 0, xp: 0, perfect: 0, combo: 0, assisted: false, solved: false, hint: 0, log: [], picked: [], typing: false, seconds: 0, name: '', avatar: '', challenge: null, group: '', groupName: '', groupOwner: '', pid: '', psecret: '' });
   // Kept when the story starts again.
-  const keepFields = () => ({ name: state.name, avatar: state.avatar, challenge: state.challenge, typing: state.typing, group: state.group, pid: state.pid, psecret: state.psecret });
+  const keepFields = () => ({ name: state.name, avatar: state.avatar, challenge: state.challenge, typing: state.typing, group: state.group, groupName: state.groupName, groupOwner: state.groupOwner, pid: state.pid, psecret: state.psecret });
 
   let state = fresh();
   try {
@@ -102,7 +105,7 @@ if (typeof document !== 'undefined') {
     }
     const g = url.searchParams.get('g'); // a group invite link opens the game with ?g=CODE
     if (g) {
-      if (validGroup(g)) { state.group = cleanGroup(g); invitedTo = state.group; save(); }
+      if (validGroup(g)) { if (cleanGroup(g) !== state.group) state.groupName = ''; state.group = cleanGroup(g); invitedTo = state.group; save(); }
       url.searchParams.delete('g'); history.replaceState(null, '', url.pathname + url.search + url.hash);
     }
   } catch {}
@@ -142,7 +145,8 @@ if (typeof document !== 'undefined') {
     $('invite').hidden = (!ch && !invitedTo) || editing;
     if (!ch && invitedTo && !editing) {
       $('invite').replaceChildren();
-      const txt = el('div'); txt.append(el('b', '', "You're invited! 🎉"), el('span', '', ' Pick a buddy and a nickname to join group ' + invitedTo + ' and race your friends.'));
+      const label = state.groupName ? '“' + state.groupName + '”' : 'group ' + invitedTo;
+      const txt = el('div'); txt.append(el('b', '', "You're invited! 🎉"), el('span', '', ' Pick a buddy and a nickname to join ' + label + ' and race your friends.'));
       $('invite').append(txt);
     }
     if (ch && !editing) {
@@ -408,8 +412,13 @@ if (typeof document !== 'undefined') {
   }
   async function loadBoard() {
     if (!boardOn || !state.group) return;
-    try { boardRows = await rpc('vq_leaderboard', { p_group: state.group }) || []; boardError = false; }
-    catch { boardError = true; }
+    const group = state.group;
+    try {
+      const [rows, name] = await Promise.all([rpc('vq_leaderboard', { p_group: group }), rpc('vq_group_name', { p_code: group }).catch(() => undefined)]);
+      if (group !== state.group) return; // switched groups meanwhile
+      boardRows = rows || []; boardError = false;
+      if (name !== undefined && (name || '') !== state.groupName) { state.groupName = name || ''; save(); }
+    } catch { boardError = true; }
     renderBoard();
   }
   function boardRow(r, rank) {
@@ -427,7 +436,9 @@ if (typeof document !== 'undefined') {
     $('trophy').hidden = !boardOn; if (!boardOn) return;
     const g = state.group;
     $('board-join').hidden = !!g; $('board-invite').hidden = !g; $('board-foot').hidden = !g;
-    $('board-group').textContent = g ? 'Group ' + g : '';
+    $('board-gname').textContent = g ? (state.groupName || 'Group ' + g) : '';
+    $('board-group').textContent = g && state.groupName ? 'Code ' + g : '';
+    $('board-rename').hidden = !g || state.groupOwner !== g;
     const status = !g ? '' : boardError ? 'The leaderboard is offline right now. Your game is still saved on this device.' : boardRows === null ? 'Loading the leaderboard…' : !boardRows.length ? 'No scores yet. Answer a question to appear here!' : '';
     $('board-status').hidden = !status; $('board-status').textContent = status;
     const rows = g && boardRows ? rankPlayers(boardRows) : [];
@@ -441,26 +452,46 @@ if (typeof document !== 'undefined') {
     $('board-more').hidden = rows.length <= LIMIT;
     $('board-more').textContent = boardAll ? 'Show fewer' : 'Show all ' + rows.length + ' players';
   }
-  function joinGroup(code) {
-    state.group = code; boardRows = null; boardError = false; boardAll = false; save();
+  function joinGroup(code, name = '', owner = false) {
+    state.group = code; state.groupName = name; state.groupOwner = owner ? code : ''; boardRows = null; boardError = false; boardAll = false; save();
     renderBoard(); syncBoard(true); show('leaders');
   }
-  $('board-create').onclick = () => joinGroup(makeGroupCode(charName(state.avatar)));
+  const boardMsg = text => { $('board-error').hidden = !text; $('board-error').textContent = text; };
+  $('board-create').onclick = async () => {
+    const name = cleanGroupName($('board-name').value);
+    if (!name) { boardMsg('Give your group a name first.'); $('board-name').focus(); return; }
+    $('board-create').disabled = true; boardMsg('');
+    try {
+      for (let i = 0; i < 5; i++) { // try a few codes in case one is already taken
+        const code = makeGroupCode(codeWord(name, charName(state.avatar)));
+        if (await rpc('vq_create_group', { p_code: code, p_name: name, p_secret: state.psecret })) { $('board-name').value = ''; joinGroup(code, name, true); return; }
+      }
+      boardMsg("Couldn't create the group. Please try again.");
+    } catch { boardMsg("Couldn't create the group right now. Check the internet connection and try again."); }
+    finally { $('board-create').disabled = false; }
+  };
+  ['board-name', 'board-code'].forEach(id => $(id).addEventListener('input', () => boardMsg('')));
+  $('board-name').addEventListener('keydown', e => { if (e.key === 'Enter') $('board-create').click(); });
+  $('board-rename').onclick = async () => {
+    const name = cleanGroupName(prompt('New name for your group:', state.groupName || ''));
+    if (!name || name === state.groupName) return;
+    try { if (await rpc('vq_rename_group', { p_code: state.group, p_name: name, p_secret: state.psecret })) { state.groupName = name; save(); renderBoard(); } }
+    catch { alert("Couldn't rename the group right now. Please try again."); }
+  };
   $('board-join-btn').onclick = () => {
     const code = cleanGroup($('board-code').value);
-    $('board-error').hidden = validGroup(code);
-    $('board-error').textContent = 'Group codes look like FOX-4821. Ask your friend for theirs.';
-    if (validGroup(code)) { $('board-code').value = ''; joinGroup(code); }
+    if (!validGroup(code)) { boardMsg('Group codes look like WORD-4821. Ask your friend for theirs.'); return; }
+    boardMsg(''); $('board-code').value = ''; joinGroup(code);
   };
   $('board-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('board-join-btn').click(); });
-  $('board-invite').onclick = () => shareLink('Join my Vocabulary Quest group', 'Join my Vocabulary Quest group and race me! Our group code is ' + state.group + '.', gameLink('g', state.group), 'board-share');
+  $('board-invite').onclick = () => shareLink('Join my Vocabulary Quest group', 'Join ' + (state.groupName ? '“' + state.groupName + '”' : 'my Vocabulary Quest group') + ' and race me in Vocabulary Quest! Our group code is ' + state.group + '.', gameLink('g', state.group), 'board-share');
   $('trophy').onclick = () => { renderBoard(); show('leaders'); };
   $('leaders-close').onclick = () => { renderHome(); show('home'); };
   $('board-more').onclick = () => { boardAll = !boardAll; renderBoard(); };
   $('board-leave').onclick = async () => {
-    if (!confirm('Leave group ' + state.group + '? Your score is removed from its leaderboard.')) return;
+    if (!confirm('Leave ' + (state.groupName ? '“' + state.groupName + '”' : 'group ' + state.group) + '? Your score is removed from its leaderboard.')) return;
     try { await rpc('vq_remove_player', { p_id: state.pid, p_secret: state.psecret }); } catch {}
-    state.group = ''; boardRows = null; $('board-share-box').hidden = true; save(); renderBoard(); show('leaders');
+    state.group = ''; state.groupName = ''; state.groupOwner = ''; boardRows = null; $('board-share-box').hidden = true; save(); renderBoard(); show('leaders');
   };
 
   // Playing time: counts only while a question is on screen and someone is actually playing.
@@ -486,4 +517,5 @@ if (typeof document !== 'undefined') {
     if (now && now.scrollIntoView) now.scrollIntoView({ block: 'center' });
   }
   route();
+  if (invitedTo && boardOn) rpc('vq_group_name', { p_code: invitedTo }).then(n => { if (n && state.group === invitedTo) { state.groupName = n; save(); if (document.body.dataset.view === 'welcome') renderWelcome(); } }).catch(() => {});
 }
